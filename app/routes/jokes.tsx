@@ -29,7 +29,6 @@ export const loader: LoaderFunction = async () => {
       orderBy: { createdAt: 'desc' }
     })
   };
-  console.log(data, 'data');
 
   return data;
 };
