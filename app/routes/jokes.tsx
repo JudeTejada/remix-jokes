@@ -3,9 +3,12 @@ import {
   Outlet,
   useLoaderData,
   LinksFunction,
-  LoaderFunction
+  LoaderFunction,
+  useParams
 } from 'remix';
 import { db } from '~/utils/db.server';
+import { getUser } from '~/utils/session.server';
+import { User } from 'prisma/prisma-client';
 
 import stylesUrl from '../styles/jokes.css';
 
@@ -18,16 +21,23 @@ export const links: LinksFunction = () => {
   ];
 };
 type LoaderData = {
+  user: User | null;
   jokeListItems: Array<{ id: string; name: string }>;
 };
 
-export const loader: LoaderFunction = async () => {
+export const loader: LoaderFunction = async ({ request }) => {
+  const jokeListItems = await db.joke.findMany({
+    take: 5,
+    select: { id: true, name: true },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  const user = await getUser(request);
+
+
   const data: LoaderData = {
-    jokeListItems: await db.joke.findMany({
-      take: 5,
-      select: { id: true, name: true },
-      orderBy: { createdAt: 'desc' }
-    })
+    user,
+    jokeListItems
   };
 
   return data;
@@ -46,6 +56,18 @@ export default function JokesRoute() {
               <span className='logo-medium'>J🤪KES</span>
             </Link>
           </h1>
+          {data.user ? (
+            <div className='user-info'>
+              <span>{`Hi ${data.user.username}`}</span>
+              <form action='/logout' method='post'>
+                <button type='submit' className='button'>
+                  Logout
+                </button>
+              </form>
+            </div>
+          ) : (
+            <Link to='/login'>Login</Link>
+          )}
         </div>
       </header>
       <main className='jokes-main'>
@@ -71,4 +93,28 @@ export default function JokesRoute() {
       </main>
     </div>
   );
+}
+
+export function CatchBoundary() {
+  const caught = useParams();
+  const params = useParams();
+  switch (caught.status) {
+    case 404: {
+      return (
+        <div className='error-container'>
+          Huh? What the heck is {params.jokeId}?
+        </div>
+      );
+    }
+    case 401: {
+      return (
+        <div className='error-container'>
+          Sorry, but {params.jokeId} is not your joke.
+        </div>
+      );
+    }
+    default: {
+      throw new Error(`Unhandled error: ${caught.status}`);
+    }
+  }
 }

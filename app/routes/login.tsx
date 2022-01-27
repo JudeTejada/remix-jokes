@@ -1,9 +1,16 @@
-import type { LinksFunction, ActionFunction } from 'remix';
+import type { LinksFunction, ActionFunction, MetaFunction } from 'remix';
 import { Link, useSearchParams, json, useActionData } from 'remix';
 import stylesUrl from '../styles/login.css';
 
-import { createUserSession, login } from '~/utils/session.server';
+import { createUserSession, login, register } from '~/utils/session.server';
 import { db } from '~/utils/db.server';
+
+export const meta: MetaFunction = () => {
+  return {
+    title: 'Remix Jokes | Login',
+    description: 'Login to submit your own jokes to Remix Jokes!'
+  };
+};
 
 export const links: LinksFunction = () => {
   return [{ rel: 'stylesheet', href: stylesUrl }];
@@ -64,7 +71,6 @@ export const action: ActionFunction = async ({ request }) => {
   switch (loginType) {
     case 'login': {
       const user = await login({ username, password });
-      console.log(user);
 
       if (!user) {
         return badRequest({
@@ -87,12 +93,19 @@ export const action: ActionFunction = async ({ request }) => {
           formError: `User with username ${username} already exists`
         });
       }
+
+      const user = await register({ username, password });
+
+      if (!user) {
+        return badRequest({
+          fields,
+          formError: 'Something went wrong trying to create a new user.'
+        });
+      }
       // create the user
       // create their session and redirect to /jokes
-      return badRequest({
-        fields,
-        formError: 'Not implemented'
-      });
+
+      return createUserSession(user.id, redirectTo);
     }
     default: {
       return badRequest({

@@ -1,8 +1,8 @@
-import type { ActionFunction } from 'remix';
+import { ActionFunction, useTransition } from 'remix';
 import { redirect, useActionData, json } from 'remix';
 import { db } from '~/utils/db.server';
 import { requireUserId } from '~/utils/session.server';
-
+import { JokeDisplay } from '~/components/joke';
 function validateJokeContent(content: string) {
   if (content.length < 10) {
     return `That joke is too short`;
@@ -30,7 +30,7 @@ type ActionData = {
 const badRequest = (data: ActionData) => json(data, { status: 400 });
 
 export const action: ActionFunction = async ({ request }) => {
-    const userId = await requireUserId(request);
+  const userId = await requireUserId(request);
   const form = await request.formData();
   const name = form.get('name');
   const content = form.get('content');
@@ -49,7 +49,7 @@ export const action: ActionFunction = async ({ request }) => {
 
   if (Object.values(fieldErrors).some(Boolean)) {
     return badRequest({ fieldErrors, fields });
-}
+  }
 
   const joke = await db.joke.create({
     data: { ...fields, jokesterId: userId }
@@ -60,63 +60,90 @@ export const action: ActionFunction = async ({ request }) => {
 export default function NewJokeRoute() {
   const actionData = useActionData<ActionData>();
 
+  const transition = useTransition();
 
+  console.log(transition, 'transition');
 
-    return (
-      <div>
-        <p>Add your own hilarious joke</p>
-        <form method='post'>
-          <div>
-            <label>
-              Name:{' '}
-              <input
-                type='text'
-                defaultValue={actionData?.fields?.name}
-                name='name'
-                aria-invalid={
-                  Boolean(actionData?.fieldErrors?.name) || undefined
-                }
-                aria-describedby={
-                  actionData?.fieldErrors?.name ? 'name-error' : undefined
-                }
-              />
-            </label>
-            {actionData?.fieldErrors?.name ? (
-              <p className='form-validation-error' role='alert' id='name-error'>
-                {actionData.fieldErrors.name}
-              </p>
-            ) : null}
-          </div>
-          <div>
-            <label>
-              Content:{' '}
-              <textarea
-                defaultValue={actionData?.fields?.content}
-                name='content'
-                aria-invalid={
-                  Boolean(actionData?.fieldErrors?.content) || undefined
-                }
-                aria-describedby={
-                  actionData?.fieldErrors?.content ? 'content-error' : undefined
-                }
-              />
-            </label>
-            {actionData?.fieldErrors?.content ? (
-              <p
-                className='form-validation-error'
-                role='alert'
-                id='content-error'
-              >
-                {actionData.fieldErrors.content}
-              </p>
-            ) : null}
-          </div>
-          <div>
-            <button type='submit' className='button'>
-              Add
-            </button>
-          </div>
-        </form>
-      </div>
-    );
+  if (transition.submission) {
+    const name = transition.submission.formData.get('name');
+    const content = transition.submission.formData.get('content');
+    if (
+      typeof name === 'string' &&
+      typeof content === 'string' &&
+      !validateJokeContent(content) &&
+      !validateJokeName(name)
+    ) {
+      return (
+        <JokeDisplay
+          joke={{ name, content }}
+          isOwner={true}
+          canDelete={false}
+        />
+      );
+    }
+  }
+
+  return (
+    <div>
+      <p>Add your own hilarious joke</p>
+      <form method='post'>
+        <div>
+          <label>
+            Name:{' '}
+            <input
+              type='text'
+              defaultValue={actionData?.fields?.name}
+              name='name'
+              aria-invalid={Boolean(actionData?.fieldErrors?.name) || undefined}
+              aria-describedby={
+                actionData?.fieldErrors?.name ? 'name-error' : undefined
+              }
+            />
+          </label>
+          {actionData?.fieldErrors?.name ? (
+            <p className='form-validation-error' role='alert' id='name-error'>
+              {actionData.fieldErrors.name}
+            </p>
+          ) : null}
+        </div>
+        <div>
+          <label>
+            Content:{' '}
+            <textarea
+              defaultValue={actionData?.fields?.content}
+              name='content'
+              aria-invalid={
+                Boolean(actionData?.fieldErrors?.content) || undefined
+              }
+              aria-describedby={
+                actionData?.fieldErrors?.content ? 'content-error' : undefined
+              }
+            />
+          </label>
+          {actionData?.fieldErrors?.content ? (
+            <p
+              className='form-validation-error'
+              role='alert'
+              id='content-error'
+            >
+              {actionData.fieldErrors.content}
+            </p>
+          ) : null}
+        </div>
+        <div>
+          <button type='submit' className='button'>
+            Add
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+export function ErrorBoundary() {
+  return (
+    <div className='error-container'>
+      Something unexpected went wrong. Sorry about that.
+    </div>
+  );
 }
