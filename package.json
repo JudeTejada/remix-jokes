@@ -8,7 +8,7 @@
     "dev": "remix dev",
     "postinstall": "remix setup node",
     "seed": "node --reqeuire esbuild-register prisma/seed.ts",
-    "vercel-build": "prisma generate && prisma migrate deploy && next build",
+    "vercel-build": "prisma generate && prisma migrate deploy && remix build",
     "prisma:generate": "prisma generate"
   },
   "prisma": {
