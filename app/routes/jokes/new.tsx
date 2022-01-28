@@ -3,6 +3,7 @@ import { redirect, useActionData, json } from 'remix';
 import { db } from '~/utils/db.server';
 import { requireUserId } from '~/utils/session.server';
 import { JokeDisplay } from '~/components/joke';
+
 function validateJokeContent(content: string) {
   if (content.length < 10) {
     return `That joke is too short`;
