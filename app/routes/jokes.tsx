@@ -9,8 +9,8 @@ import {
 import { db } from '~/utils/db.server';
 import { getUser } from '~/utils/session.server';
 import { User } from 'prisma/prisma-client';
-
 import stylesUrl from '../styles/jokes.css';
+
 
 export const links: LinksFunction = () => {
   return [
