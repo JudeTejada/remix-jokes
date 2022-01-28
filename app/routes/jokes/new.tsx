@@ -2,7 +2,7 @@ import { ActionFunction, useTransition } from 'remix';
 import { redirect, useActionData, json } from 'remix';
 import { db } from '~/utils/db.server';
 import { requireUserId } from '~/utils/session.server';
-import { JokeDisplay } from '~/components/joke';
+import { JokeDisplay } from '~/components/Joke';
 
 function validateJokeContent(content: string) {
   if (content.length < 10) {
